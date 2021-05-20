@@ -43,28 +43,30 @@ namespace AntiAFK.Services
             {
                 var getUsers = await _userManager.GetUsersAsync(KnownActorTypes.Player);
 
-                foreach (var user in getUsers.Where(x => x.Session != null))
+                var get = getUsers.Where(x => x.Session != null);
+
+                if(get.Count() > _configuration.GetSection("PunishmentConfiguration:MinimalOfPlayers").Get<int>())
                 {
-                    var player = user as IPlayerUser;
-
-                    var find = _playersData.FirstOrDefault(x => x.playerId == user.Id);
-
-                    if (find != null)
+                    foreach (var user in get)
                     {
-                        if(find.position == player!.Player.Transform.Position)
+                        var player = user as IPlayerUser;
+
+                        var find = _playersData.FirstOrDefault(x => x.playerId == user.Id);
+
+                        if (find != null)
                         {
-                            Console.WriteLine(_configuration.GetSection("PunishmentConfiguration:BanPlayer").Get<bool>());
-
-                            if (_configuration.GetSection("PunishmentConfiguration:BanPlayer").Get<bool>())
+                            if (find.position == player!.Player.Transform.Position)
                             {
-                                await _userManager.BanAsync(user, "You have been banned for been **AFK**", DateTime.Now.AddSeconds(_configuration.GetSection("PunishmentConfiguration:BanTime").Get<float>()));
-
-                                if (_configuration.GetSection("WebHookConfiguration:UseWebHook").Get<bool>())
+                                if (_configuration.GetSection("PunishmentConfiguration:BanPlayer").Get<bool>())
                                 {
-                                    var message = new DiscordMessage
+                                    await _userManager.BanAsync(user, "You have been banned for been **AFK**", DateTime.Now.AddSeconds(_configuration.GetSection("PunishmentConfiguration:BanTime").Get<float>()));
+
+                                    if (_configuration.GetSection("WebHookConfiguration:UseWebHook").Get<bool>())
                                     {
-                                        username = "AntiAFK",
-                                        embeds = new List<Embed>
+                                        var message = new DiscordMessage
+                                        {
+                                            username = "AntiAFK",
+                                            embeds = new List<Embed>
                                         {
                                             new Embed
                                             {
@@ -83,12 +85,6 @@ namespace AntiAFK.Services
                                                         inline = true,
                                                         name = "Player Name",
                                                         value = user.DisplayName
-                                                    },
-                                                    new Field
-                                                    {
-                                                        inline = true,
-                                                        name = "Player Address",
-                                                        value = player!.Player.Address!.ToString()
                                                     },
                                                     new Field
                                                     {
@@ -111,21 +107,21 @@ namespace AntiAFK.Services
                                                 }
                                             }
                                         }
-                                    };
+                                        };
 
-                                    await message.SendMessageAsync(_configuration.GetSection("WebHookConfiguration:WebHookURL").Get<string>());
+                                        await message.SendMessageAsync(_configuration.GetSection("WebHookConfiguration:WebHookURL").Get<string>());
+                                    }
                                 }
-                            }
-                            else if(_configuration.GetSection("PunishmentConfiguration:KickPlayer").Get<bool>())
-                            {
-                                await _userManager.KickAsync(user, "You have been kicked for been **AFK**");
-
-                                if (_configuration.GetSection("WebHookConfiguration:UseWebHook").Get<bool>())
+                                else if (_configuration.GetSection("PunishmentConfiguration:KickPlayer").Get<bool>())
                                 {
-                                    var message = new DiscordMessage
+                                    await _userManager.KickAsync(user, "You have been kicked for been **AFK**");
+
+                                    if (_configuration.GetSection("WebHookConfiguration:UseWebHook").Get<bool>())
                                     {
-                                        username = "AntiAFK",
-                                        embeds = new List<Embed>
+                                        var message = new DiscordMessage
+                                        {
+                                            username = "AntiAFK",
+                                            embeds = new List<Embed>
                                         {
                                             new Embed
                                             {
@@ -148,12 +144,6 @@ namespace AntiAFK.Services
                                                     new Field
                                                     {
                                                         inline = true,
-                                                        name = "Player Address",
-                                                        value = player!.Player!.ToString()
-                                                    },
-                                                    new Field
-                                                    {
-                                                        inline = true,
                                                         name = "Punishment Type",
                                                         value = "Kick"
                                                     },
@@ -166,24 +156,25 @@ namespace AntiAFK.Services
                                                 }
                                             }
                                         }
-                                    };
+                                        };
 
-                                    await message.SendMessageAsync(_configuration.GetSection("WebHookConfiguration:WebHookURL").Get<string>());
+                                        await message.SendMessageAsync(_configuration.GetSection("WebHookConfiguration:WebHookURL").Get<string>());
+                                    }
                                 }
+                            }
+                            else
+                            {
+                                find.position = player!.Player.Transform.Position;
                             }
                         }
                         else
                         {
-                            find.position = player!.Player.Transform.Position;
+                            _playersData.Add(new PlayerData
+                            {
+                                playerId = user.Id,
+                                position = player!.Player.Transform.Position
+                            });
                         }
-                    }
-                    else
-                    {
-                        _playersData.Add(new PlayerData
-                        {
-                            playerId = user.Id,
-                            position = player!.Player.Transform.Position
-                        });
                     }
                 }
 

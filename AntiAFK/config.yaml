@@ -1,6 +1,7 @@
 CheckInterval: 500 # Seconds
 
 PunishmentConfiguration:
+  MinimalOfPlayers: 0
   KickPlayer: false
   BanPlayer: true
   BanTime: 60 # Seconds
