@@ -1,0 +1,10 @@
+CheckInterval: 500 # Seconds
+
+PunishmentConfiguration:
+  KickPlayer: false
+  BanPlayer: true
+  BanTime: 60 # Seconds
+
+WebHookConfiguration:
+  UseWebHook: true
+  WebHookURL: "You webhook here please"
